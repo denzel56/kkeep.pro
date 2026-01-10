@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vault     Vault?
+}
+
+model Vault {
+  userId    String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Весь зашифрованный vault (строка/json/base64) — шифрование на клиенте
+  blob      String
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
