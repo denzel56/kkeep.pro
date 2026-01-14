@@ -6,5 +6,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
+  },
+  "devDependencies": {
+    "prisma": "^6.19.1"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.1"
   }
 }

@@ -1,6 +1,7 @@
 import Fastify  from "fastify";
 import { prisma } from "./db/prisma.js";
 import { ensureUserAndVault } from "./vault/ensureUserAndVault.js";
+import { verifyTelegramInitData } from "./auth/verifyTelegramInitData.js";
 
 const app = Fastify({ logger: true });
 
@@ -32,6 +33,30 @@ app.listen({port: 3000}).catch((err) => {
 app.get("/db-ping", async () => {
   await prisma.$queryRaw`SELECT 1`
   return {ok: true}
+})
+
+app.post<{
+  Body: { initData: string }
+}>("/auth/telegram", async (request, reply) => {
+  const initData = request.body?.initData
+
+  if (typeof initData !== 'string' || initData.length === 0) {
+    return reply.code(400).send({ error: 'initData must be a non-empty string' })
+  }
+  
+  try {
+    const verified = verifyTelegramInitData(initData)
+
+    return {
+      ok: true,
+      userId: verified.queryId,
+      authDate: verified.authDate,
+      queryId: verified.queryId,
+    }
+  } catch (err) {
+    request.log.warn({err}, 'telegram initData verification failed')
+    return reply.code(400).send({error: 'Invalid initData'})
+  }
 })
 
 app.get("/vault", async (request) => {
