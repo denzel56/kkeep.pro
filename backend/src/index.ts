@@ -25,7 +25,11 @@ app.get("/whoami", async (request) => {
   return {userId: request.userId}
 })
 
-app.listen({port: 3000}).catch((err) => {
+const host = process.env.HOST ?? '127.0.0.1'
+const port = Number(process.env.PORT ?? 3000)
+
+
+app.listen({host, port}).catch((err) => {
   app.log.error(err)
   process.exit(1)
 })
