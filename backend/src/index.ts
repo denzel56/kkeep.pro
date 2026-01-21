@@ -2,6 +2,7 @@ import Fastify  from "fastify";
 import { prisma } from "./db/prisma.js";
 import { ensureUserAndVault } from "./vault/ensureUserAndVault.js";
 import { verifyTelegramInitData } from "./auth/verifyTelegramInitData.js";
+import jwt from "@fastify/jwt";
 
 const app = Fastify({ logger: true });
 
@@ -15,6 +16,27 @@ app.addHook('preHandler', async (request) => {
   }
 
   request.userId = userId
+})
+
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET is missing in env')
+}
+
+
+app.register(jwt, {
+  secret: JWT_SECRET,
+})
+
+app.get("/jwt-ping", async (request, reply) => {
+  const token = await reply.jwtSign({ sub: 'test-user'})
+  const payload =  app.jwt.verify<{ sub: string }>(token)
+  
+  return {
+    ok: true,
+    token,
+    payload
+  }
 })
 
 app.get("/health", async () => (
@@ -51,9 +73,19 @@ app.post<{
   try {
     const verified = verifyTelegramInitData(initData)
 
+    console.log(verified.user.id)
+
+    const tgUserId = verified.user.id
+
+    const token = await reply.jwtSign({ 
+      sub: tgUserId,
+      expiresIn: '30d'
+     })
+
     return {
       ok: true,
-      userId: verified.queryId,
+      // userId: verified.queryId,
+      token,
       authDate: verified.authDate,
       queryId: verified.queryId,
     }
